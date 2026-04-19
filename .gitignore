@@ -1,0 +1,6 @@
+.chrome-headless/
+.wrangler/
+node_modules/
+Thumbs.db
+Desktop.ini
+page-check.png
