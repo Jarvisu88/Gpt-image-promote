@@ -7,6 +7,8 @@ const AUTHOR_ALL = '全部作者';
 const SECTION_ALL = '全部分类';
 const SOURCE_ALL = '全部来源';
 const STORAGE_KEY = 'gpt-image-2-gallery-editor-v1';
+const ANNOUNCEMENTS_STORAGE_KEY = 'gpt-image-2-gallery-announcements-v1';
+const CUSTOM_NOTICE_DISMISS_KEY = 'gpt-image-2-gallery-custom-notice-dismiss-v1';
 const STORAGE_BACKUPS_KEY = 'gpt-image-2-gallery-backups-v1';
 const BACKUP_LIMIT = 12;
 const PLACEHOLDER_CACHE = new Map();
@@ -19,6 +21,35 @@ const BASE_SOURCES = [
   { key: 'github-raw', label: 'GitHub 原始', name: 'awesome-gpt-image-2-prompts 原始补充' },
   { key: 'opennana', label: 'OpenNana', name: 'OpenNana ChatGPT 图库' },
 ];
+const DEFAULT_ANNOUNCEMENTS = {
+  customNotice: {
+    enabled: true,
+    title: '站长公告',
+    message: '本站已集成 GPT-Image-2 生图工具，可直接从案例库进入使用。推荐先浏览案例，再拿提示词去生成。',
+    buttonLabel: '打开生图工具',
+    buttonHref: TOOL_URL,
+    tone: 'highlight',
+  },
+  updateNotice: {
+    enabled: true,
+    title: '最近更新',
+    summary: '最近已上线站内生图工具、本地编辑工作流，以及更稳的图片回退机制。',
+    highlights: [
+      '新增独立生图工具页，可直接输入 Prompt 或参考图生成',
+      '支持本地新增 / 编辑 / 删除案例，并导出 data.js 再手动发布',
+      '支持本地备份快照、JSON 导入导出、data.js 预览',
+    ],
+  },
+  usageGuide: {
+    enabled: true,
+    title: '使用说明',
+    items: [
+      '先在案例库筛选你想参考的分类、作者和提示词',
+      '点击“打开生图工具”进入站内生成页，直接开始使用',
+      'API Key 仅保存在你的浏览器本地，不会上传到本站源码',
+    ],
+  },
+};
 
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -152,6 +183,38 @@ function normalizeSections(rawSections) {
     .filter((section) => section.title);
 }
 
+function normalizeAnnouncements(raw = {}) {
+  const customNotice = raw?.customNotice || {};
+  const updateNotice = raw?.updateNotice || {};
+  const usageGuide = raw?.usageGuide || {};
+
+  return {
+    customNotice: {
+      enabled: customNotice.enabled !== false,
+      title: safeTrim(customNotice.title) || DEFAULT_ANNOUNCEMENTS.customNotice.title,
+      message: safeTrim(customNotice.message) || DEFAULT_ANNOUNCEMENTS.customNotice.message,
+      buttonLabel: safeTrim(customNotice.buttonLabel) || DEFAULT_ANNOUNCEMENTS.customNotice.buttonLabel,
+      buttonHref: safeTrim(customNotice.buttonHref) || DEFAULT_ANNOUNCEMENTS.customNotice.buttonHref,
+      tone: safeTrim(customNotice.tone) || DEFAULT_ANNOUNCEMENTS.customNotice.tone,
+    },
+    updateNotice: {
+      enabled: updateNotice.enabled !== false,
+      title: safeTrim(updateNotice.title) || DEFAULT_ANNOUNCEMENTS.updateNotice.title,
+      summary: safeTrim(updateNotice.summary) || DEFAULT_ANNOUNCEMENTS.updateNotice.summary,
+      highlights: parseTags(updateNotice.highlights).length
+        ? parseTags(updateNotice.highlights)
+        : DEFAULT_ANNOUNCEMENTS.updateNotice.highlights,
+    },
+    usageGuide: {
+      enabled: usageGuide.enabled !== false,
+      title: safeTrim(usageGuide.title) || DEFAULT_ANNOUNCEMENTS.usageGuide.title,
+      items: parseTags(usageGuide.items).length
+        ? parseTags(usageGuide.items)
+        : DEFAULT_ANNOUNCEMENTS.usageGuide.items,
+    },
+  };
+}
+
 function stripRemovedSources(rawSections) {
   return normalizeSections(rawSections)
     .map((section) => ({
@@ -252,6 +315,71 @@ function saveBackups(backups) {
   }
 }
 
+function parseCustomNoticeBlocks(message) {
+  const raw = safeTrim(message);
+  if (!raw) {
+    return [];
+  }
+
+  return raw
+    .split(/\n\s*\n+/)
+    .map((block, index) => {
+      const lines = block
+        .split('\n')
+        .map((line) => safeTrim(line))
+        .filter(Boolean);
+
+      if (!lines.length) {
+        return null;
+      }
+
+      let tone = 'green';
+      const firstLine = lines[0];
+      const toneMatch = firstLine.match(/^\[(green|orange|red|blue)\]\s*(.*)$/i);
+      if (toneMatch) {
+        tone = toneMatch[1].toLowerCase();
+        lines[0] = safeTrim(toneMatch[2]);
+      }
+
+      const [title = '', meta = '', ...rest] = lines;
+      return {
+        id: `notice-line-${index}`,
+        tone,
+        title,
+        meta,
+        body: rest,
+      };
+    })
+    .filter(Boolean);
+}
+
+function loadStoredAnnouncements(defaultAnnouncements) {
+  const normalizedDefault = normalizeAnnouncements(defaultAnnouncements);
+  if (!EDITOR_ENABLED) {
+    return normalizedDefault;
+  }
+  try {
+    const raw = window.localStorage.getItem(ANNOUNCEMENTS_STORAGE_KEY);
+    if (!raw) {
+      return normalizedDefault;
+    }
+    return normalizeAnnouncements(JSON.parse(raw));
+  } catch {
+    return normalizedDefault;
+  }
+}
+
+function saveStoredAnnouncements(announcements) {
+  if (!EDITOR_ENABLED) {
+    return;
+  }
+  try {
+    window.localStorage.setItem(ANNOUNCEMENTS_STORAGE_KEY, JSON.stringify(announcements));
+  } catch {
+    // ignore persistence quota issues here; caller will already notify the user
+  }
+}
+
 function triggerDownload(filename, content, mimeType) {
   const blob = new Blob([content], { type: mimeType });
   const url = window.URL.createObjectURL(blob);
@@ -291,6 +419,7 @@ createApp({
   setup() {
     const defaultSections = normalizeSections(window.CASE_LIBRARY || []);
     const baseMeta = ref(window.CASE_LIBRARY_META || {});
+    const defaultAnnouncements = normalizeAnnouncements(baseMeta.value.announcements || DEFAULT_ANNOUNCEMENTS);
     const loading = ref(false);
     const error = ref('');
     const sections = ref(loadStoredSections(defaultSections));
@@ -306,17 +435,23 @@ createApp({
     const editorMode = ref('create');
     const editorOriginalId = ref('');
     const editorNotice = ref('');
-    const hasLocalEdits = ref(EDITOR_ENABLED && Boolean(window.localStorage.getItem(STORAGE_KEY)));
+    const hasLocalEdits = ref(
+      EDITOR_ENABLED && Boolean(window.localStorage.getItem(STORAGE_KEY) || window.localStorage.getItem(ANNOUNCEMENTS_STORAGE_KEY)),
+    );
     const backups = ref(loadBackups());
     const previewVisible = ref(false);
+    const announcements = ref(loadStoredAnnouncements(defaultAnnouncements));
+    const announcementEditorVisible = ref(false);
+    const customNoticeVisible = ref(false);
     const editorForm = ref(createEmptyEditorForm());
     const importInput = ref(null);
+    const announcementForm = ref(createAnnouncementForm());
 
     if (!sections.value.length) {
       error.value = '本地案例数据未加载成功，请确认 data.js 与 index.html 在同一目录中。';
     }
 
-    const libraryMeta = computed(() => buildLibraryMeta(baseMeta.value, sections.value));
+    const libraryMeta = computed(() => buildLibraryMeta({ ...baseMeta.value, announcements: announcements.value }, sections.value));
     const allCases = computed(() => sections.value.flatMap((section) => section.cases || []));
 
     const authorOptions = computed(() => {
@@ -355,6 +490,7 @@ createApp({
 
     const editorSourceOptions = computed(() => libraryMeta.value.sources || BASE_SOURCES);
     const dataJsPreview = computed(() => buildExportPayload(libraryMeta.value, sections.value));
+    const customNoticeBlocks = computed(() => parseCustomNoticeBlocks(announcements.value.customNotice.message));
 
     const filteredSections = computed(() => {
       const normalizedQuery = query.value.trim().toLowerCase();
@@ -458,6 +594,55 @@ createApp({
       };
     }
 
+    function createAnnouncementForm(source = announcements.value) {
+      const normalized = normalizeAnnouncements(source);
+      return {
+        customEnabled: normalized.customNotice.enabled,
+        customTitle: normalized.customNotice.title,
+        customMessage: normalized.customNotice.message,
+        customButtonLabel: normalized.customNotice.buttonLabel,
+        customButtonHref: normalized.customNotice.buttonHref,
+        customTone: normalized.customNotice.tone,
+        updateEnabled: normalized.updateNotice.enabled,
+        updateTitle: normalized.updateNotice.title,
+        updateSummary: normalized.updateNotice.summary,
+        updateHighlightsText: (normalized.updateNotice.highlights || []).join('\n'),
+        guideEnabled: normalized.usageGuide.enabled,
+        guideTitle: normalized.usageGuide.title,
+        guideItemsText: (normalized.usageGuide.items || []).join('\n'),
+      };
+    }
+
+    function getCustomNoticeSignature(source = announcements.value.customNotice) {
+      return JSON.stringify({
+        title: safeTrim(source?.title),
+        message: safeTrim(source?.message),
+        buttonLabel: safeTrim(source?.buttonLabel),
+        buttonHref: safeTrim(source?.buttonHref),
+      });
+    }
+
+    function openCustomNoticeModal() {
+      if (!announcements.value.customNotice.enabled) {
+        return;
+      }
+      customNoticeVisible.value = true;
+      document.body.classList.add('modal-open');
+    }
+
+    function closeCustomNoticeModal() {
+      customNoticeVisible.value = false;
+      try {
+        window.localStorage.setItem(CUSTOM_NOTICE_DISMISS_KEY, getCustomNoticeSignature());
+      } catch {
+        // ignore storage failures for dismiss state
+      }
+      if (!selectedCase.value && !editorVisible.value && !previewVisible.value && !announcementEditorVisible.value) {
+        document.body.classList.remove('modal-open');
+      }
+    }
+
+
     function showEditorNotice(message) {
       editorNotice.value = message;
       window.clearTimeout(showEditorNotice.timer);
@@ -496,6 +681,17 @@ createApp({
       };
       backups.value = [snapshot, ...backups.value].slice(0, BACKUP_LIMIT);
       saveBackups(backups.value);
+    }
+
+    function persistAnnouncements(nextAnnouncements, message = '公告已更新') {
+      const normalized = normalizeAnnouncements(nextAnnouncements);
+      announcements.value = normalized;
+      saveStoredAnnouncements(normalized);
+      if (EDITOR_ENABLED) {
+        hasLocalEdits.value = true;
+        createBackupSnapshot(message, sections.value, { ...libraryMeta.value, announcements: normalized });
+      }
+      showEditorNotice(message);
     }
 
     function persistSections(nextSections, message = '已保存到当前浏览器') {
@@ -551,7 +747,9 @@ createApp({
 
     function closeCase() {
       selectedCase.value = null;
-      document.body.classList.remove('modal-open');
+      if (!editorVisible.value && !previewVisible.value && !announcementEditorVisible.value && !customNoticeVisible.value) {
+        document.body.classList.remove('modal-open');
+      }
     }
 
     function moveCase(step) {
@@ -598,6 +796,14 @@ createApp({
       }
       if (previewVisible.value && event.key === 'Escape') {
         closePreview();
+        return;
+      }
+      if (announcementEditorVisible.value && event.key === 'Escape') {
+        closeAnnouncementEditor();
+        return;
+      }
+      if (customNoticeVisible.value && event.key === 'Escape') {
+        closeCustomNoticeModal();
         return;
       }
       if (!selectedCase.value) {
@@ -678,7 +884,7 @@ createApp({
 
     function closeEditor() {
       editorVisible.value = false;
-      if (!selectedCase.value) {
+      if (!selectedCase.value && !previewVisible.value && !announcementEditorVisible.value && !customNoticeVisible.value) {
         document.body.classList.remove('modal-open');
       }
     }
@@ -693,9 +899,57 @@ createApp({
 
     function closePreview() {
       previewVisible.value = false;
-      if (!selectedCase.value && !editorVisible.value) {
+      if (!selectedCase.value && !editorVisible.value && !announcementEditorVisible.value && !customNoticeVisible.value) {
         document.body.classList.remove('modal-open');
       }
+    }
+
+    function openAnnouncementEditor() {
+      if (!EDITOR_ENABLED) {
+        return;
+      }
+      announcementForm.value = createAnnouncementForm(announcements.value);
+      announcementEditorVisible.value = true;
+      document.body.classList.add('modal-open');
+    }
+
+    function closeAnnouncementEditor() {
+      announcementEditorVisible.value = false;
+      if (!selectedCase.value && !editorVisible.value && !previewVisible.value && !customNoticeVisible.value) {
+        document.body.classList.remove('modal-open');
+      }
+    }
+
+    function saveAnnouncementEditor() {
+      const nextAnnouncements = normalizeAnnouncements({
+        customNotice: {
+          enabled: Boolean(announcementForm.value.customEnabled),
+          title: announcementForm.value.customTitle,
+          message: announcementForm.value.customMessage,
+          buttonLabel: announcementForm.value.customButtonLabel,
+          buttonHref: announcementForm.value.customButtonHref,
+          tone: announcementForm.value.customTone,
+        },
+        updateNotice: {
+          enabled: Boolean(announcementForm.value.updateEnabled),
+          title: announcementForm.value.updateTitle,
+          summary: announcementForm.value.updateSummary,
+          highlights: String(announcementForm.value.updateHighlightsText || '')
+            .split('\n')
+            .map((item) => safeTrim(item))
+            .filter(Boolean),
+        },
+        usageGuide: {
+          enabled: Boolean(announcementForm.value.guideEnabled),
+          title: announcementForm.value.guideTitle,
+          items: String(announcementForm.value.guideItemsText || '')
+            .split('\n')
+            .map((item) => safeTrim(item))
+            .filter(Boolean),
+        },
+      });
+      persistAnnouncements(nextAnnouncements, '公告已更新');
+      closeAnnouncementEditor();
     }
 
     function buildCaseFromEditor() {
@@ -813,9 +1067,12 @@ createApp({
         createBackupSnapshot('清空本地编辑前备份', sections.value, libraryMeta.value);
       }
       sections.value = normalizeSections(defaultSections);
+      announcements.value = normalizeAnnouncements(defaultAnnouncements);
       window.localStorage.removeItem(STORAGE_KEY);
+      window.localStorage.removeItem(ANNOUNCEMENTS_STORAGE_KEY);
       hasLocalEdits.value = false;
       closeEditor();
+      closeAnnouncementEditor();
       showEditorNotice('已恢复默认数据');
       if (selectedCase.value) {
         const replacement = sections.value
@@ -889,6 +1146,10 @@ createApp({
         const text = await file.text();
         const parsed = parseImportPayload(text);
         baseMeta.value = parsed.meta || baseMeta.value;
+        if (parsed.meta?.announcements) {
+          announcements.value = normalizeAnnouncements(parsed.meta.announcements);
+          saveStoredAnnouncements(announcements.value);
+        }
         persistSections(parsed.sections, `已导入 ${file.name}`);
       } catch (importError) {
         showEditorNotice(importError?.message || '导入失败，请检查文件格式');
@@ -925,6 +1186,8 @@ createApp({
         createBackupSnapshot(`恢复备份「${backup.label}」前`, sections.value, libraryMeta.value);
       }
       baseMeta.value = backup.meta || baseMeta.value;
+      announcements.value = normalizeAnnouncements(backup.meta?.announcements || defaultAnnouncements);
+      saveStoredAnnouncements(announcements.value);
       persistSections(backup.sections, `已恢复备份：${backup.label}`);
     }
 
@@ -962,6 +1225,19 @@ createApp({
     onMounted(() => {
       window.addEventListener('keydown', handleKeydown);
       featuredTimer = window.setInterval(cycleFeatured, 5200);
+      if (announcements.value.customNotice.enabled) {
+        let dismissedSignature = '';
+        try {
+          dismissedSignature = window.localStorage.getItem(CUSTOM_NOTICE_DISMISS_KEY) || '';
+        } catch {
+          dismissedSignature = '';
+        }
+        if (dismissedSignature !== getCustomNoticeSignature()) {
+          window.setTimeout(() => {
+            openCustomNoticeModal();
+          }, 120);
+        }
+      }
     });
 
     onBeforeUnmount(() => {
@@ -976,7 +1252,7 @@ createApp({
         const exists = filteredCases.value.some((item) => item.id === selectedCase.value.id);
         if (!exists) {
           selectedCase.value = null;
-          if (!editorVisible.value) {
+          if (!editorVisible.value && !previewVisible.value && !announcementEditorVisible.value && !customNoticeVisible.value) {
             document.body.classList.remove('modal-open');
           }
         }
@@ -1017,7 +1293,12 @@ createApp({
       hasLocalEdits,
       backups,
       previewVisible,
+      announcements,
+      announcementEditorVisible,
+      customNoticeVisible,
+      announcementForm,
       dataJsPreview,
+      customNoticeBlocks,
       editorAvailable: EDITOR_ENABLED,
       importInput,
       copyPrompt,
@@ -1036,6 +1317,11 @@ createApp({
       closeEditor,
       openPreview,
       closePreview,
+      openAnnouncementEditor,
+      closeAnnouncementEditor,
+      openCustomNoticeModal,
+      closeCustomNoticeModal,
+      saveAnnouncementEditor,
       saveEditor,
       deleteCase,
       deleteCurrentEditorCase,
@@ -1108,14 +1394,45 @@ createApp({
       </header>
 
       <main>
-        <section class="notice-strip">
-          <div>
-            <strong>站内已集成 GPT-Image-2 生图工具</strong>
-            <div>支持输入 Prompt、上传参考图、复用历史记录，用户可以直接从案例库跳过去开始生成。</div>
-          </div>
-          <div class="notice-strip-actions">
-            <a class="button primary" :href="TOOL_URL">立即去生图</a>
-            <a class="button ghost" href="#gallery">继续浏览案例</a>
+        <section class="announcement-stack">
+          <article
+            v-if="announcements.updateNotice.enabled"
+            class="announcement-card announcement-hero"
+          >
+            <div class="announcement-hero-top">
+              <div class="announcement-kicker">更新日志</div>
+              <span class="announcement-badge">最新</span>
+            </div>
+            <h2>{{ announcements.updateNotice.title }}</h2>
+            <p>{{ announcements.updateNotice.summary }}</p>
+            <ul class="announcement-list">
+              <li v-for="item in announcements.updateNotice.highlights" :key="item">{{ item }}</li>
+            </ul>
+            <div class="announcement-actions">
+              <button v-if="announcements.customNotice.enabled" class="button primary" type="button" @click="openCustomNoticeModal">
+                查看站长公告
+              </button>
+              <a class="button subtle" :href="TOOL_URL">打开生图工具</a>
+            </div>
+          </article>
+
+          <div class="announcement-grid">
+            <article v-if="announcements.usageGuide.enabled" class="announcement-card compact">
+              <div class="announcement-kicker">使用指南</div>
+              <h3>{{ announcements.usageGuide.title }}</h3>
+              <ul class="announcement-list">
+                <li v-for="item in announcements.usageGuide.items" :key="item">{{ item }}</li>
+              </ul>
+            </article>
+
+            <article v-if="announcements.customNotice.enabled" class="announcement-card compact announcement-side-card">
+              <div class="announcement-kicker">站长公告</div>
+              <h3>{{ announcements.customNotice.title }}</h3>
+              <p>首次打开会自动弹出，也可以随时手动查看。</p>
+              <div class="announcement-actions">
+                <button class="button primary" type="button" @click="openCustomNoticeModal">打开公告</button>
+              </div>
+            </article>
           </div>
         </section>
 
@@ -1128,6 +1445,9 @@ createApp({
             <div class="panel-actions" v-if="editorAvailable">
               <button class="button subtle" type="button" @click="openCreateEditor()">
                 新增案例
+              </button>
+              <button class="button subtle" type="button" @click="openAnnouncementEditor">
+                编辑公告
               </button>
               <button class="button subtle" type="button" @click="toggleEditMode">
                 {{ isEditing ? '退出编辑' : '编辑模式' }}
@@ -1162,13 +1482,8 @@ createApp({
             @change="handleImportFile"
           />
           <div v-if="editorNotice" class="editor-notice">{{ editorNotice }}</div>
-          <div class="editor-hint">
-            <template v-if="editorAvailable">
-              当前是本地编辑模式：修改只保存在当前浏览器，不会直接改写磁盘文件。可导入 / 导出 JSON 或 data.js，再手动发布到网站。导入会替换当前本地数据。
-            </template>
-            <template v-else>
-              当前是发布浏览模式：普通访问者只能查看内容，不会看到编辑入口。
-            </template>
+          <div v-if="editorAvailable" class="editor-hint">
+            本地编辑只保存在当前浏览器。改完后可导出 JSON 或 data.js，再手动发布到网站。
           </div>
 
           <div v-if="editorAvailable && backups.length" class="backup-panel">
@@ -1546,6 +1861,150 @@ createApp({
                 <div class="editor-actions-right">
                   <button class="button ghost" type="button" @click="closeEditor">取消</button>
                   <button class="button primary" type="button" @click="saveEditor">保存修改</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </teleport>
+
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="customNoticeVisible" class="editor-modal notice-popup" @click.self="closeCustomNoticeModal">
+            <div class="editor-shell notice-popup-shell">
+              <div class="editor-head">
+                <div>
+                  <div class="section-kicker">站长公告</div>
+                  <h3>{{ announcements.customNotice.title }}</h3>
+                </div>
+                <button class="button ghost small" type="button" @click="closeCustomNoticeModal">关闭</button>
+              </div>
+
+              <div class="notice-popup-timeline">
+                <article
+                  v-for="item in customNoticeBlocks"
+                  :key="item.id"
+                  class="notice-popup-item"
+                  :class="'tone-' + item.tone"
+                >
+                  <div class="notice-popup-marker"></div>
+                  <div class="notice-popup-content">
+                    <h4>{{ item.title }}</h4>
+                    <div v-if="item.meta" class="notice-popup-meta">{{ item.meta }}</div>
+                    <p v-for="line in item.body" :key="line" class="notice-popup-line">{{ line }}</p>
+                  </div>
+                </article>
+
+                <p v-if="!customNoticeBlocks.length" class="editor-copy notice-popup-copy">{{ announcements.customNotice.message }}</p>
+              </div>
+
+              <div class="editor-actions notice-popup-actions">
+                <div class="editor-actions-right">
+                  <button class="button ghost" type="button" @click="closeCustomNoticeModal">关闭公告</button>
+                  <a
+                    v-if="announcements.customNotice.buttonLabel && announcements.customNotice.buttonHref"
+                    class="button primary"
+                    :href="announcements.customNotice.buttonHref"
+                    @click="closeCustomNoticeModal"
+                  >
+                    {{ announcements.customNotice.buttonLabel }}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+      </teleport>
+
+      <teleport to="body">
+        <transition name="fade">
+          <div v-if="announcementEditorVisible" class="editor-modal" @click.self="closeAnnouncementEditor">
+            <div class="editor-shell">
+              <div class="editor-head">
+                <div>
+                  <div class="section-kicker">Announcement Editor</div>
+                  <h3>编辑用户公告</h3>
+                </div>
+                <button class="button ghost small" type="button" @click="closeAnnouncementEditor">关闭</button>
+              </div>
+
+              <p class="editor-copy">
+                这里管理的是用户可见公告：包含自定义公告、最近更新和使用说明。保存后会跟随本地编辑一起导出到 data.js。
+              </p>
+
+              <div class="editor-grid">
+                <label class="editor-field">
+                  <span>自定义公告启用</span>
+                  <select v-model="announcementForm.customEnabled">
+                    <option :value="true">启用</option>
+                    <option :value="false">关闭</option>
+                  </select>
+                </label>
+                <label class="editor-field">
+                  <span>公告风格</span>
+                  <select v-model="announcementForm.customTone">
+                    <option value="highlight">高亮</option>
+                    <option value="soft">柔和</option>
+                  </select>
+                </label>
+                <label class="editor-field field-wide">
+                  <span>自定义公告标题</span>
+                  <input v-model="announcementForm.customTitle" type="text" placeholder="例如：站长公告" />
+                </label>
+                <label class="editor-field field-wide">
+                  <span>自定义公告正文</span>
+                  <textarea v-model="announcementForm.customMessage" rows="8" placeholder="支持按空行分段，例如：&#10;[green] 本站已支持 gpt5.5 切换令牌至 codex2 即可&#10;1 天前 2026-04-24 07:56&#10;&#10;[orange] cc2 先不要使用 部分用户反馈有问题 我进行一下测试&#10;5 天前 2026-04-20 19:03"></textarea>
+                </label>
+                <label class="editor-field">
+                  <span>按钮文案</span>
+                  <input v-model="announcementForm.customButtonLabel" type="text" placeholder="例如：打开生图工具" />
+                </label>
+                <label class="editor-field">
+                  <span>按钮链接</span>
+                  <input v-model="announcementForm.customButtonHref" type="text" placeholder="../tools/image-generator.html" />
+                </label>
+
+                <label class="editor-field">
+                  <span>最近更新启用</span>
+                  <select v-model="announcementForm.updateEnabled">
+                    <option :value="true">启用</option>
+                    <option :value="false">关闭</option>
+                  </select>
+                </label>
+                <label class="editor-field field-wide">
+                  <span>最近更新标题</span>
+                  <input v-model="announcementForm.updateTitle" type="text" placeholder="例如：最近更新" />
+                </label>
+                <label class="editor-field field-wide">
+                  <span>最近更新摘要</span>
+                  <textarea v-model="announcementForm.updateSummary" rows="4" placeholder="概括最近这次更新"></textarea>
+                </label>
+                <label class="editor-field field-wide">
+                  <span>更新要点（每行一条）</span>
+                  <textarea v-model="announcementForm.updateHighlightsText" rows="6" placeholder="每行填写一条更新内容"></textarea>
+                </label>
+
+                <label class="editor-field">
+                  <span>使用说明启用</span>
+                  <select v-model="announcementForm.guideEnabled">
+                    <option :value="true">启用</option>
+                    <option :value="false">关闭</option>
+                  </select>
+                </label>
+                <label class="editor-field field-wide">
+                  <span>使用说明标题</span>
+                  <input v-model="announcementForm.guideTitle" type="text" placeholder="例如：如何使用本站" />
+                </label>
+                <label class="editor-field field-wide">
+                  <span>使用说明（每行一条）</span>
+                  <textarea v-model="announcementForm.guideItemsText" rows="6" placeholder="每行填写一条使用说明"></textarea>
+                </label>
+              </div>
+
+              <div class="editor-actions">
+                <div class="editor-actions-right">
+                  <button class="button ghost" type="button" @click="closeAnnouncementEditor">取消</button>
+                  <button class="button primary" type="button" @click="saveAnnouncementEditor">保存公告</button>
                 </div>
               </div>
             </div>

@@ -54,3 +54,19 @@ git branch -M main
 git remote add origin <your-github-repo-url>
 git push -u origin main
 ```
+
+## One-Click Publish Helper
+
+Double-click `publish-gallery.bat` in the repo root (`F:\web video`) to:
+
+1. Copy the latest exported `gallery\gpt-image-2-gallery-data-*.js` over `gallery\data.js` when present
+2. Stage the tracked site files
+3. Create a Lore-format commit
+4. Push to `origin/main`
+
+Optional flags:
+
+```bat
+publish-gallery.bat --dry-run
+publish-gallery.bat --no-pause
+```

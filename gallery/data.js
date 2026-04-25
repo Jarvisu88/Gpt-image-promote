@@ -19,7 +19,35 @@ window.CASE_LIBRARY_META = {
       "label": "OpenNana",
       "name": "OpenNana ChatGPT 图库"
     }
-  ]
+  ],
+  "announcements": {
+    "customNotice": {
+      "enabled": true,
+      "title": "站长公告",
+      "message": "站长个人渠道有限，需要投稿的可以联系站长vx：kLan1cZero 或者qq：2671827706\n\n本站已集成 GPT-Image-2 生图工具，可直接从案例库进入使用。推荐先浏览案例，再拿提示词去生成。",
+      "buttonLabel": "打开生图工具",
+      "buttonHref": "../tools/image-generator.html",
+      "tone": "soft"
+    },
+    "updateNotice": {
+      "enabled": true,
+      "title": "最近更新",
+      "summary": "最近已上线站内生图工具、本地编辑工作流，以及更稳的图片回退机制。",
+      "highlights": [
+        "案例库已更新到最新",
+        "新增独立生图工具页，可直接输入 Prompt 或参考图生成"
+      ]
+    },
+    "usageGuide": {
+      "enabled": true,
+      "title": "使用说明",
+      "items": [
+        "先在案例库筛选你想参考的分类、作者和提示词",
+        "点击“打开生图工具”进入站内生成页，直接开始使用",
+        "API Key 仅保存在你的浏览器本地，不会上传到本站源码"
+      ]
+    }
+  }
 };
 
 window.CASE_LIBRARY = [
