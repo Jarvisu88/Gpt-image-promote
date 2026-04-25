@@ -2,8 +2,8 @@
 
 Static Cloudflare Workers site with:
 
-- `/` for the scroll-driven promo page
-- `/gallery/index.html` for the original gallery page
+- `/` redirecting directly to `/gallery/index.html`
+- `/gallery/index.html` for the main gallery page
 
 ## Structure
 
@@ -13,6 +13,8 @@ Static Cloudflare Workers site with:
 |-- styles.css
 |-- app.js
 |-- data.js
+|-- tools/
+|   `-- image-generator.html
 |-- wrangler.jsonc
 `-- gallery/
     |-- index.html
@@ -33,12 +35,12 @@ Static Cloudflare Workers site with:
 
 Cloudflare will serve:
 
-- `/` -> promo page
+- `/` -> redirect to gallery page
 - `/gallery/index.html` -> gallery page
 
 ## Local Notes
 
-- The main page links to `./gallery/index.html`.
+- The root `index.html` immediately redirects to `./gallery/index.html`.
 - `wrangler.jsonc` is configured for static asset deployment only.
 - If you want a different production project name, update `name` in `wrangler.jsonc`.
 

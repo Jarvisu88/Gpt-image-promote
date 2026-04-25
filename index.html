@@ -6,276 +6,50 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     />
-    <title>GPT-Image-2 Scroll Film</title>
+    <title>正在进入 GPT-Image-2 展示馆…</title>
     <meta
       name="description"
-      content="A scroll-directed promo page for GPT-Image-2 prompts, styled like a cinematic teaser."
+      content="根路径已直接跳转到 GPT-Image-2 展示馆。"
     />
+    <meta http-equiv="refresh" content="1; url=./gallery/index.html" />
+    <link rel="canonical" href="./gallery/index.html" />
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        window.location.replace("./gallery/index.html");
+      });
+    </script>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #0f1115;
+        color: #f5f7fb;
+      }
+
+      main {
+        max-width: 560px;
+        text-align: center;
+      }
+
+      a {
+        color: #8ab4ff;
+      }
+    </style>
   </head>
-  <body id="top">
-    <div class="noise" aria-hidden="true"></div>
-    <div class="backdrop-orbs" aria-hidden="true">
-      <span class="orb orb-a"></span>
-      <span class="orb orb-b"></span>
-      <span class="orb orb-c"></span>
-    </div>
-    <a class="quick-link" id="quick-link" data-gallery-link href="#">
-      Open Gallery
-    </a>
-
-    <aside class="hud" aria-hidden="true">
-      <div class="hud-topline">
-        <div class="hud-label">Scroll Film</div>
-        <div class="hud-hint" id="hud-hint">Enter Play</div>
-      </div>
-      <div class="hud-time" id="hud-time">00:00 - 00:03</div>
-      <div class="hud-title" id="hud-title">Unlock the Logic of Art.</div>
-      <div class="hud-track">
-        <span class="hud-fill" id="hud-fill"></span>
-      </div>
-    </aside>
-
-    <main class="story">
-      <section
-        class="scene scene-intro"
-        data-scene="intro"
-        data-time="00:00 - 00:03"
-        data-title="Unlock the Logic of Art."
-      >
-        <div class="scene-pin">
-          <div class="scene-grid intro-grid">
-            <div class="copy-block">
-              <p class="eyebrow">Opening Shot</p>
-              <h1 class="hero-title">
-                <span>Unlock</span>
-                <span>the Logic</span>
-                <span>of Art.</span>
-              </h1>
-              <p class="hero-text">
-                一行落下，整段光影开始苏醒。
-              </p>
-            </div>
-
-            <div class="terminal-shell">
-              <div class="terminal-topbar">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <div class="terminal-meta">
-                <span>prompt://session/init</span>
-                <span>live render</span>
-              </div>
-              <div class="terminal-body">
-                <div class="terminal-line">
-                  <span class="terminal-prompt">&gt;</span>
-                  <span class="typed-text" id="typed-text"></span>
-                  <span class="caret" aria-hidden="true"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        class="scene scene-categories"
-        data-scene="categories"
-        data-time="00:03 - 00:08"
-        data-title="Mastering GPT-Image2."
-      >
-        <div class="scene-pin">
-          <div class="scene-grid">
-            <div class="copy-block">
-              <p class="eyebrow">Scene 02</p>
-              <h2 class="scene-title">Mastering GPT-Image2.</h2>
-              <p class="scene-text">
-                风格、封面、霓虹与纸感，在一秒内轮番上场。
-              </p>
-              <div class="chip-river" id="category-chips"></div>
-            </div>
-
-            <div class="browser-stage">
-              <div class="browser-frame browser-back">
-                <div class="browser-head">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <div class="browser-body mini-grid" id="browser-mini-grid"></div>
-              </div>
-
-              <div class="browser-frame browser-front">
-                <div class="browser-head">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-                <div class="browser-hero">
-                  <div class="browser-copy">
-                    <div class="browser-kicker">Featured Style</div>
-                    <h3 id="category-title">Cyberpunk</h3>
-                    <p id="category-caption">Neon portrait direction with controlled chaos.</p>
-                  </div>
-                  <div class="browser-visual">
-                    <img
-                      id="category-image"
-                      alt="Featured category visual"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        class="scene scene-prompt"
-        data-scene="prompt"
-        data-time="00:08 - 00:15"
-        data-title="Precision Prompts."
-      >
-        <div class="scene-pin">
-          <div class="scene-grid prompt-grid">
-            <div class="copy-block">
-              <p class="eyebrow">Scene 03</p>
-              <h2 class="scene-title">Precision Prompts.</h2>
-              <p class="scene-text">
-                字句继续推进，画面一张张接住它。
-              </p>
-              <div class="beat-list" id="pair-steps"></div>
-            </div>
-
-            <div class="prompt-stage">
-              <div class="prompt-code">
-                <div class="code-topbar">
-                  <span>Prompt Source</span>
-                  <span id="pair-author">@artist</span>
-                </div>
-                <div class="code-title" id="pair-title">Case Title</div>
-                <pre class="code-block" id="pair-prompt"></pre>
-              </div>
-
-              <div class="prompt-output">
-                <div class="output-card">
-                  <img
-                    id="pair-image"
-                    alt="Prompt output preview"
-                  />
-                  <div class="output-meta">
-                    <span id="pair-category">Category</span>
-                    <span id="pair-counter">01 / 04</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        class="scene scene-interaction"
-        data-scene="interaction"
-        data-time="00:15 - 00:22"
-        data-title="Infinite Inspiration."
-      >
-        <div class="scene-pin">
-          <div class="scene-grid interaction-grid">
-            <div class="copy-block">
-              <p class="eyebrow">Scene 04</p>
-              <h2 class="scene-title">Infinite Inspiration.</h2>
-              <p class="scene-text">
-                复制，切换，继续向前。
-              </p>
-            </div>
-
-            <div class="interaction-stage">
-              <div class="interaction-panel">
-                <div class="panel-topbar">
-                  <span>Prompt Control</span>
-                  <button class="copy-button" id="copy-button" type="button">
-                    Copy
-                  </button>
-                </div>
-
-                <div class="style-tags" id="style-tags"></div>
-
-                <div class="interaction-main">
-                  <div class="interaction-info">
-                    <div class="interaction-label" id="interaction-label">Visual Track</div>
-                    <div class="interaction-title" id="interaction-title">UI Generation</div>
-                    <p class="interaction-text" id="interaction-text"></p>
-                  </div>
-
-                  <div class="interaction-visual">
-                    <img
-                      id="interaction-image"
-                      alt="Interaction preview"
-                    />
-                  </div>
-                </div>
-
-                <div class="interaction-strip" id="interaction-strip"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        class="scene scene-meteor"
-        data-scene="meteor"
-        data-time="00:22 - 00:27"
-        data-title="Your Gateway to Pro AI Art."
-      >
-        <div class="scene-pin">
-          <div class="meteor-overlay">
-            <p class="eyebrow">Scene 05</p>
-            <h2 class="scene-title">Your Gateway to Pro AI Art.</h2>
-            <p class="scene-text">
-              黑场压低，亮面开始掠过。
-            </p>
-          </div>
-
-          <div class="meteor-field" id="meteor-field"></div>
-        </div>
-      </section>
-
-      <section
-        class="scene scene-final"
-        data-scene="final"
-        data-time="00:27 - 00:30"
-        data-title="Explore Now."
-      >
-        <div class="scene-pin">
-          <div class="final-card">
-            <img
-              class="final-image"
-              id="final-image"
-              alt="Final showcase visual"
-            />
-            <div class="final-overlay"></div>
-            <div class="final-content">
-              <p class="eyebrow">Final Frame</p>
-              <h2 class="final-title" id="brand-name"></h2>
-              <p class="final-domain" id="brand-domain"></p>
-              <p class="final-text" id="brand-tagline"></p>
-              <div class="final-actions">
-                <a class="final-button" id="final-link" data-gallery-link href="#">
-                  Open Gallery
-                </a>
-                <a class="final-button secondary" href="#top">Replay</a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+  <body>
+    <main>
+      <h1>正在进入展示馆…</h1>
+      <p>如果没有自动跳转，请点击这里：</p>
+      <p><a href="./gallery/index.html">进入 GPT-Image-2 案例观摩馆</a></p>
     </main>
-
-    <script src="./data.js"></script>
-    <script src="./app.js"></script>
   </body>
 </html>
