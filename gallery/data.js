@@ -1,30 +1,9 @@
 window.CASE_LIBRARY_META = {
-  "dataVersion": "2026-04-22",
-  "sectionCount": 7,
-  "sourceCount": 3,
-  "totalCases": 228,
-  "sources": [
-    {
-      "key": "curated",
-      "label": "当前站内",
-      "name": "当前站内精选"
-    },
-    {
-      "key": "github-raw",
-      "label": "GitHub 原始",
-      "name": "awesome-gpt-image-2-prompts 原始补充"
-    },
-    {
-      "key": "opennana",
-      "label": "OpenNana",
-      "name": "OpenNana ChatGPT 图库"
-    }
-  ],
   "announcements": {
     "customNotice": {
       "enabled": true,
       "title": "站长公告",
-      "message": "站长个人渠道有限，需要投稿的可以联系站长vx：kLan1cZero 或者qq：2671827706\n\n本站已集成 GPT-Image-2 生图工具，可直接从案例库进入使用。推荐先浏览案例，再拿提示词去生成。",
+      "message": "https://hcn0zdlnwxy3.feishu.cn/wiki/BqETwdXv1iaGKDkaXtXc40u1nBh?from=from_copylink 飞书文档内有api使用教程哦~ 遇事不决先看文档\n\n站长个人渠道有限，需要投稿的可以联系站长vx：kLan1cZero 或者qq：2671827706\n\n本站已集成 GPT-Image-2 生图工具，可直接从案例库进入使用。推荐先浏览案例，再拿提示词去生成。",
       "buttonLabel": "打开生图工具",
       "buttonHref": "../tools/image-generator.html",
       "tone": "soft"
@@ -47,7 +26,28 @@ window.CASE_LIBRARY_META = {
         "API Key 仅保存在你的浏览器本地，不会上传到本站源码"
       ]
     }
-  }
+  },
+  "dataVersion": "2026-04-25",
+  "sectionCount": 7,
+  "sourceCount": 3,
+  "totalCases": 228,
+  "sources": [
+    {
+      "key": "curated",
+      "label": "当前站内",
+      "name": "当前站内精选"
+    },
+    {
+      "key": "github-raw",
+      "label": "GitHub 原始",
+      "name": "awesome-gpt-image-2-prompts 原始补充"
+    },
+    {
+      "key": "opennana",
+      "label": "OpenNana",
+      "name": "OpenNana ChatGPT 图库"
+    }
+  ]
 };
 
 window.CASE_LIBRARY = [
